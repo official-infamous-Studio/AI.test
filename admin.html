@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Infamous AI v2.0 – Admin Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black: #050508;
+      --dark: #0a0a10;
+      --card: #0f0f1a;
+      --sidebar: #080810;
+      --border: #1a1a2e;
+      --green: #00ff88;
+      --green-dim: #00cc6a;
+      --green-glow: rgba(0,255,136,0.15);
+      --purple: #a855f7;
+      --purple-dim: #7c3aed;
+      --purple-glow: rgba(168,85,247,0.15);
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --white: #ffffff;
+      --red: #ff4d6d;
+      --yellow: #fbbf24;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--black); color:var(--text); font-family:'Inter',sans-serif; height:100vh; overflow:hidden; display:flex; }
+
+    /* SIDEBAR */
+    .sidebar { width:240px; min-width:240px; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; height:100vh; }
+    .sidebar-logo { padding:20px; border-bottom:1px solid var(--border); }
+    .sidebar-logo-text { font-family:'Orbitron',monospace; font-size:0.9rem; font-weight:900; color:var(--red); text-shadow:0 0 12px var(--red); letter-spacing:2px; }
+    .sidebar-logo-text span { color:var(--green); }
+    .sidebar-logo-sub { font-family:'Share Tech Mono',monospace; font-size:0.65rem; color:var(--muted); margin-top:2px; }
+
+    .nav-section { padding:20px 12px 8px; }
+    .nav-label { font-family:'Share Tech Mono',monospace; font-size:0.65rem; color:var(--muted); letter-spacing:3px; text-transform:uppercase; padding:0 8px; margin-bottom:8px; }
+
+    .nav-btn { width:100%; padding:10px 12px; border-radius:6px; border:1px solid transparent; background:transparent; color:var(--muted); font-family:'Inter',sans-serif; font-size:0.83rem; cursor:pointer; display:flex; align-items:center; gap:10px; transition:all 0.2s; text-align:left; margin-bottom:3px; }
+    .nav-btn:hover { background:var(--card); color:var(--text); }
+    .nav-btn.active { background:var(--card); border-color:var(--red); color:var(--red); }
+    .nav-btn-icon { font-size:1rem; width:20px; text-align:center; }
+
+    .sidebar-footer { margin-top:auto; border-top:1px solid var(--border); padding:14px; }
+    .admin-tag { font-family:'Share Tech Mono',monospace; font-size:0.7rem; color:var(--red); }
+    .admin-email { font-size:0.75rem; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .logout-btn { width:100%; margin-top:10px; padding:8px; background:rgba(255,77,109,0.1); border:1px solid var(--red); border-radius:4px; color:var(--red); font-family:'Share Tech Mono',monospace; font-size:0.75rem; cursor:pointer; transition:all 0.2s; letter-spacing:1px; }
+    .logout-btn:hover { background:rgba(255,77,109,0.2); }
+
+    /* MAIN */
+    .admin-main { flex:1; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+
+    .admin-header { padding:16px 28px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:rgba(8,8,16,0.8); flex-shrink:0; }
+    .admin-header-title { font-family:'Orbitron',monospace; font-size:1rem; font-weight:700; color:var(--red); letter-spacing:2px; }
+    .admin-header-sub { font-size:0.75rem; color:var(--muted); margin-top:2px; }
+    .admin-badge { background:rgba(255,77,109,0.1); border:1px solid var(--red); border-radius:4px; padding:4px 12px; font-family:'Share Tech Mono',monospace; font-size:0.7rem; color:var(--red); letter-spacing:2px; }
+
+    .admin-content { flex:1; overflow-y:auto; padding:28px; }
+    .admin-content::-webkit-scrollbar { width:4px; }
+    .admin-content::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+    /* PANELS */
+    .panel { display:none; }
+    .panel.active { display:block; }
+
+    .panel-title { font-family:'Orbitron',monospace; font-size:0.9rem; font-weight:700; color:var(--white); margin-bottom:24px; display:flex; align-items:center; gap:10px; }
+    .panel-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    /* STATS GRID */
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
+    .stat-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:20px; }
+    .stat-card-icon { font-size:1.5rem; margin-bottom:10px; }
+    .stat-card-value { font-family:'Orbitron',monospace; font-size:1.8rem; font-weight:700; color:var(--green); }
+    .stat-card-label { font-family:'Share Tech Mono',monospace; font-size:0.7rem; color:var(--muted); letter-spacing:1px; margin-top:4px; }
+    .stat-card.red .stat-card-value { color:var(--red); }
+    .stat-card.purple .stat-card-value { color:var(--purple); }
+    .stat-card.yellow .stat-card-value { color:var(--yellow); }
+
+    /* TABLE */
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table th { font-family:'Share Tech Mono',monospace; font-size:0.7rem; color:var(--green); letter-spacing:2px; text-transform:uppercase; padding:10px 16px; border-bottom:1px solid var(--border); text-align:left; }
+    .data-table td { padding:12px 16px; border-bottom:1px solid rgba(26,26,46,0.5); font-size:0.83rem; color:var(--text); }
+    .data-table tr:hover td { background:rgba(15,15,26,0.5); }
+    .data-table tbody tr:last-child td { border-bottom:none; }
+
+    .badge { display:inline-block; padding:2px 10px; border-radius:100px; font-family:'Share Tech Mono',monospace; font-size:0.7rem; letter-spacing:1px; }
+    .badge-green { background:rgba(0,255,136,0.1); border:1px solid var(--green); color:var(--green); }
+    .badge-purple { background:rgba(168,85,247,0.1); border:1px solid var(--purple); color:var(--purple); }
+    .badge-red { background:rgba(255,77,109,0.1); border:1px solid var(--red); color:var(--red); }
+    .badge-yellow { background:rgba(251,191,36,0.1); border:1px solid var(--yellow); color:var(--yellow); }
+
+    .plan-badge-dirt { background:rgba(139,90,43,0.2); border:1px solid #8B5A2B; color:#cd8b4a; font-family:'Share Tech Mono',monospace; font-size:0.68rem; padding:2px 8px; border-radius:100px; }
+    .plan-badge-stone { background:rgba(100,100,100,0.2); border:1px solid #666; color:#aaa; font-family:'Share Tech Mono',monospace; font-size:0.68rem; padding:2px 8px; border-radius:100px; }
+    .plan-badge-glass { background:rgba(135,206,235,0.1); border:1px solid #87CEEB; color:#87CEEB; font-family:'Share Tech Mono',monospace; font-size:0.68rem; padding:2px 8px; border-radius:100px; }
+    .plan-badge-bricks { background:rgba(255,100,50,0.15); border:1px solid #ff6432; color:#ff8060; font-family:'Share Tech Mono',monospace; font-size:0.68rem; padding:2px 8px; border-radius:100px; }
+    .plan-badge-obsidian { background:rgba(168,85,247,0.15); border:1px solid var(--purple); color:var(--purple); font-family:'Share Tech Mono',monospace; font-size:0.68rem; padding:2px 8px; border-radius:100px; }
+    .plan-badge-bedrock { background:rgba(0,255,136,0.1); border:1px solid var(--green); color:var(--green); font-family:'Share Tech Mono',monospace; font-size:0.68rem; padding:2px 8px; border-radius:100px; }
+
+    /* ACTION BTNS */
+    .action-btn { padding:5px 12px; border-radius:4px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'Share Tech Mono',monospace; font-size:0.7rem; cursor:pointer; transition:all 0.2s; margin-right:4px; }
+    .action-btn:hover { border-color:var(--green); color:var(--green); }
+    .action-btn.danger:hover { border-color:var(--red); color:var(--red); }
+
+    /* SELECT / INPUT */
+    .form-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+    .form-select { padding:9px 14px; background:var(--card); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:'Share Tech Mono',monospace; font-size:0.8rem; outline:none; cursor:pointer; }
+    .form-select:focus { border-color:var(--green); }
+    .form-input-admin { padding:9px 14px; background:var(--card); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:'Inter',sans-serif; font-size:0.85rem; outline:none; flex:1; min-width:200px; }
+    .form-input-admin:focus { border-color:var(--green); }
+    .btn-action { padding:9px 20px; background:linear-gradient(135deg,var(--green-dim),var(--purple-dim)); border:none; border-radius:4px; color:white; font-family:'Share Tech Mono',monospace; font-size:0.8rem; cursor:pointer; letter-spacing:1px; transition:all 0.2s; }
+    .btn-action:hover { box-shadow:0 0 15px var(--green-glow); }
+
+    /* CHAT LOG */
+    .chat-log-item { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:12px; transition:border-color 0.2s; }
+    .chat-log-item:hover { border-color:var(--green); }
+    .chat-log-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .chat-log-user { font-family:'Share Tech Mono',monospace; font-size:0.75rem; color:var(--green); }
+    .chat-log-meta { font-size:0.72rem; color:var(--muted); font-family:'Share Tech Mono',monospace; }
+    .chat-log-preview { font-size:0.83rem; color:var(--muted); line-height:1.5; }
+
+    /* ANNOUNCEMENTS */
+    .announcement-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:10px; }
+    .ann-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .ann-title { font-family:'Orbitron',monospace; font-size:0.8rem; color:var(--green); font-weight:700; }
+    .ann-date { font-size:0.72rem; color:var(--muted); font-family:'Share Tech Mono',monospace; }
+    .ann-body { font-size:0.83rem; color:var(--muted); line-height:1.6; }
+
+    .ann-form { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:20px; margin-bottom:24px; }
+    .ann-form-title { font-family:'Share Tech Mono',monospace; font-size:0.75rem; color:var(--green); letter-spacing:2px; margin-bottom:14px; }
+    .ann-textarea { width:100%; padding:12px; background:var(--dark); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:'Inter',sans-serif; font-size:0.85rem; resize:vertical; min-height:100px; outline:none; margin-top:8px; }
+    .ann-textarea:focus { border-color:var(--green); }
+
+    /* Loading */
+    .loading-row { text-align:center; padding:40px; color:var(--muted); font-family:'Share Tech Mono',monospace; font-size:0.8rem; }
+    .loading-spinner { display:inline-block; width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin 0.8s linear infinite; margin-right:10px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Toast */
+    .toast { position:fixed; bottom:24px; right:24px; z-index:9999; padding:12px 20px; border-radius:6px; font-family:'Share Tech Mono',monospace; font-size:0.82rem; transform:translateY(60px); opacity:0; transition:all 0.3s; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.success { background:rgba(0,255,136,0.1); border:1px solid var(--green); color:var(--green); }
+    .toast.error { background:rgba(255,77,109,0.1); border:1px solid var(--red); color:var(--red); }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-text">INFAMOUS<span>AI</span></div>
+    <div class="sidebar-logo-sub">ADMIN CONTROL PANEL</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Dashboard</div>
+    <button class="nav-btn active" onclick="showPanel('overview', this)">
+      <span class="nav-btn-icon">📊</span> Overview
+    </button>
+    <button class="nav-btn" onclick="showPanel('users', this)">
+      <span class="nav-btn-icon">👥</span> Users
+    </button>
+    <button class="nav-btn" onclick="showPanel('chats', this)">
+      <span class="nav-btn-icon">💬</span> Chat Logs
+    </button>
+    <button class="nav-btn" onclick="showPanel('announcements', this)">
+      <span class="nav-btn-icon">📢</span> Announcements
+    </button>
+    <button class="nav-btn" onclick="showPanel('logins', this)">
+      <span class="nav-btn-icon">🔐</span> Login Activity
+    </button>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="admin-tag">⚡ ADMIN ACCESS</div>
+    <div class="admin-email" id="adminEmail">infamoussmp4@gmail.com</div>
+    <button class="logout-btn" onclick="logout()">LOGOUT</button>
+  </div>
+</div>
+
+<div class="admin-main">
+  <div class="admin-header">
+    <div>
+      <div class="admin-header-title" id="panelHeading">SYSTEM OVERVIEW</div>
+      <div class="admin-header-sub" id="panelSubHeading">Infamous AI v2.0 Admin Dashboard</div>
+    </div>
+    <div class="admin-badge">ADMIN // AUTHORIZED</div>
+  </div>
+
+  <div class="admin-content">
+
+    <!-- OVERVIEW -->
+    <div class="panel active" id="panel-overview">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-card-icon">👥</div>
+          <div class="stat-card-value" id="statTotalUsers">—</div>
+          <div class="stat-card-label">TOTAL USERS</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-card-icon">💬</div>
+          <div class="stat-card-value" id="statTotalChats">—</div>
+          <div class="stat-card-label">TOTAL CHATS</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-card-icon">📅</div>
+          <div class="stat-card-value" id="statTodayUsers">—</div>
+          <div class="stat-card-label">NEW TODAY</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-card-icon">⚡</div>
+          <div class="stat-card-value" id="statMsgsToday">—</div>
+          <div class="stat-card-label">MSGS TODAY</div>
+        </div>
+      </div>
+
+      <div class="panel-title">📊 Plan Distribution</div>
+      <div id="planDist"></div>
+
+      <div class="panel-title" style="margin-top:28px;">🔴 Recent Signups</div>
+      <div id="recentSignups"><div class="loading-row"><span class="loading-spinner"></span>Loading...</div></div>
+    </div>
+
+    <!-- USERS -->
+    <div class="panel" id="panel-users">
+      <div class="form-row">
+        <input class="form-input-admin" id="userSearch" placeholder="Search by username or email..." oninput="filterUsers()"/>
+        <select class="form-select" id="planFilter" onchange="filterUsers()">
+          <option value="">All Plans</option>
+          <option value="dirt">Dirt</option>
+          <option value="stone">Stone</option>
+          <option value="glass">Glass</option>
+          <option value="bricks">Bricks</option>
+          <option value="obsidian">Obsidian</option>
+          <option value="bedrock">Bedrock</option>
+        </select>
+      </div>
+      <div id="usersTableWrap">
+        <div class="loading-row"><span class="loading-spinner"></span>Loading users...</div>
+      </div>
+    </div>
+
+    <!-- CHATS -->
+    <div class="panel" id="panel-chats">
+      <div class="form-row">
+        <input class="form-input-admin" id="chatSearch" placeholder="Search by user..." oninput="filterChats()"/>
+        <select class="form-select" id="chatModeFilter" onchange="filterChats()">
+          <option value="">All Modes</option>
+          <option value="chat">Chat</option>
+          <option value="coding">Coding</option>
+          <option value="image">Image</option>
+        </select>
+      </div>
+      <div id="chatLogsWrap">
+        <div class="loading-row"><span class="loading-spinner"></span>Loading chats...</div>
+      </div>
+    </div>
+
+    <!-- ANNOUNCEMENTS -->
+    <div class="panel" id="panel-announcements">
+      <div class="ann-form">
+        <div class="ann-form-title">// SEND ANNOUNCEMENT</div>
+        <input class="form-input-admin" id="annTitle" placeholder="Announcement title..." style="width:100%;margin-bottom:10px;"/>
+        <textarea class="ann-textarea" id="annBody" placeholder="Write your announcement here... (visible to all users)"></textarea>
+        <div style="margin-top:12px;display:flex;justify-content:flex-end;">
+          <button class="btn-action" onclick="sendAnnouncement()">📢 BROADCAST</button>
+        </div>
+      </div>
+      <div class="panel-title">📬 Past Announcements</div>
+      <div id="announcementsList">
+        <div class="loading-row"><span class="loading-spinner"></span>Loading...</div>
+      </div>
+    </div>
+
+    <!-- LOGINS -->
+    <div class="panel" id="panel-logins">
+      <div id="loginLogsWrap">
+        <div class="loading-row"><span class="loading-spinner"></span>Loading login activity...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Plan Change Modal -->
+<div id="planModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;display:none;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:32px;width:360px;position:relative;">
+    <button onclick="document.getElementById('planModal').style.display='none'" style="position:absolute;top:12px;right:12px;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
+    <div style="font-family:'Orbitron',monospace;font-size:1rem;color:var(--white);margin-bottom:20px;">Change User Plan</div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--green);margin-bottom:8px;">USER: <span id="modalUsername" style="color:var(--text);"></span></div>
+    <input type="hidden" id="modalUserId"/>
+    <label style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--green);display:block;margin-bottom:8px;">NEW PLAN</label>
+    <select class="form-select" id="newPlanSelect" style="width:100%;margin-bottom:20px;">
+      <option value="dirt">Dirt – 25 msgs</option>
+      <option value="stone">Stone – 50 msgs</option>
+      <option value="glass">Glass – 100 msgs</option>
+      <option value="bricks">Bricks – 150 msgs</option>
+      <option value="obsidian">Obsidian – 200 msgs</option>
+      <option value="bedrock">Bedrock – 300 msgs</option>
+    </select>
+    <button class="btn-action" style="width:100%;" onclick="updateUserPlan()">UPDATE PLAN</button>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:5000/api';
+  let token = null;
+  let allUsers = [];
+  let allChats = [];
+
+  window.addEventListener('DOMContentLoaded', () => {
+    token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!token || !user || user.email !== 'infamoussmp4@gmail.com') {
+      alert('Access denied. Admin only.');
+      window.location.href = 'index.html';
+      return;
+    }
+    loadOverview();
+  });
+
+  function showPanel(name, btn) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    btn.classList.add('active');
+
+    const titles = { overview:'SYSTEM OVERVIEW', users:'USER MANAGEMENT', chats:'CHAT MONITOR', announcements:'ANNOUNCEMENTS', logins:'LOGIN ACTIVITY' };
+    const subs = { overview:'Infamous AI v2.0 Dashboard', users:'Manage all registered users', chats:'Monitor all conversations', announcements:'Broadcast to all users', logins:'Track login events' };
+    document.getElementById('panelHeading').textContent = titles[name];
+    document.getElementById('panelSubHeading').textContent = subs[name];
+
+    if (name === 'users') loadUsers();
+    if (name === 'chats') loadChats();
+    if (name === 'announcements') loadAnnouncements();
+    if (name === 'logins') loadLoginActivity();
+  }
+
+  async function apiFetch(path, opts = {}) {
+    const res = await fetch(API + path, {
+      ...opts,
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...(opts.headers || {}) }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error');
+    return data;
+  }
+
+  async function loadOverview() {
+    try {
+      const data = await apiFetch('/admin/stats');
+      document.getElementById('statTotalUsers').textContent = data.totalUsers;
+      document.getElementById('statTotalChats').textContent = data.totalChats;
+      document.getElementById('statTodayUsers').textContent = data.newToday;
+      document.getElementById('statMsgsToday').textContent = data.msgsToday;
+
+      // Plan distribution
+      const planDist = document.getElementById('planDist');
+      const plans = ['dirt','stone','glass','bricks','obsidian','bedrock'];
+      planDist.innerHTML = plans.map(p => {
+        const count = data.planDist?.[p] || 0;
+        const pct = data.totalUsers ? Math.round((count/data.totalUsers)*100) : 0;
+        return `
+          <div style="margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--text);">${p.toUpperCase()}</span>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--muted);">${count} users (${pct}%)</span>
+            </div>
+            <div style="height:6px;background:var(--border);border-radius:3px;">
+              <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--green-dim),var(--purple-dim));border-radius:3px;transition:width 0.5s;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Recent signups
+      const recentDiv = document.getElementById('recentSignups');
+      recentDiv.innerHTML = `
+        <table class="data-table">
+          <thead><tr>
+            <th>Username</th><th>Email</th><th>Plan</th><th>Joined</th>
+          </tr></thead>
+          <tbody>${(data.recentUsers || []).map(u => `
+            <tr>
+              <td>${escHtml(u.username)}</td>
+              <td style="color:var(--muted)">${escHtml(u.email)}</td>
+              <td><span class="plan-badge-${u.plan}">${u.plan?.toUpperCase()}</span></td>
+              <td style="color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:0.75rem;">${fmtDate(u.createdAt)}</td>
+            </tr>`).join('')}</tbody>
+        </table>
+      `;
+    } catch(e) {
+      showToast('Error loading stats: ' + e.message, 'error');
+    }
+  }
+
+  async function loadUsers() {
+    const wrap = document.getElementById('usersTableWrap');
+    wrap.innerHTML = '<div class="loading-row"><span class="loading-spinner"></span>Loading users...</div>';
+    try {
+      allUsers = await apiFetch('/admin/users');
+      renderUsers(allUsers);
+    } catch(e) {
+      wrap.innerHTML = `<div class="loading-row" style="color:var(--red);">Error: ${e.message}</div>`;
+    }
+  }
+
+  function renderUsers(users) {
+    const wrap = document.getElementById('usersTableWrap');
+    if (!users.length) { wrap.innerHTML = '<div class="loading-row">No users found.</div>'; return; }
+    wrap.innerHTML = `
+      <table class="data-table">
+        <thead><tr>
+          <th>Username</th><th>Email</th><th>Plan</th><th>Msgs Used</th><th>Joined</th><th>Actions</th>
+        </tr></thead>
+        <tbody>${users.map(u => `
+          <tr>
+            <td><strong>${escHtml(u.username)}</strong></td>
+            <td style="color:var(--muted)">${escHtml(u.email)}</td>
+            <td><span class="plan-badge-${u.plan}">${u.plan?.toUpperCase()}</span></td>
+            <td style="font-family:'Share Tech Mono',monospace;font-size:0.78rem;">${u.messagesUsed || 0}</td>
+            <td style="color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:0.75rem;">${fmtDate(u.createdAt)}</td>
+            <td>
+              <button class="action-btn" onclick="openPlanModal('${u._id}','${escHtml(u.username)}','${u.plan}')">Change Plan</button>
+              <button class="action-btn danger" onclick="resetMsgs('${u._id}')">Reset Msgs</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function filterUsers() {
+    const q = document.getElementById('userSearch').value.toLowerCase();
+    const plan = document.getElementById('planFilter').value;
+    const filtered = allUsers.filter(u => {
+      const match = !q || u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
+      const planMatch = !plan || u.plan === plan;
+      return match && planMatch;
+    });
+    renderUsers(filtered);
+  }
+
+  async function loadChats() {
+    const wrap = document.getElementById('chatLogsWrap');
+    wrap.innerHTML = '<div class="loading-row"><span class="loading-spinner"></span>Loading chats...</div>';
+    try {
+      allChats = await apiFetch('/admin/chats');
+      renderChats(allChats);
+    } catch(e) {
+      wrap.innerHTML = `<div class="loading-row" style="color:var(--red);">Error: ${e.message}</div>`;
+    }
+  }
+
+  function renderChats(chats) {
+    const wrap = document.getElementById('chatLogsWrap');
+    if (!chats.length) { wrap.innerHTML = '<div class="loading-row">No chats found.</div>'; return; }
+    wrap.innerHTML = chats.map(c => `
+      <div class="chat-log-item">
+        <div class="chat-log-header">
+          <div class="chat-log-user">
+            ${escHtml(c.user?.username || 'Unknown')}
+            <span style="color:var(--muted);margin-left:8px;">${escHtml(c.user?.email || '')}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="badge ${c.mode === 'coding' ? 'badge-purple' : c.mode === 'image' ? 'badge-yellow' : 'badge-green'}">${(c.mode || 'chat').toUpperCase()}</span>
+            <span class="chat-log-meta">${fmtDate(c.updatedAt)} · ${c.messages?.length || 0} msgs</span>
+          </div>
+        </div>
+        <div class="chat-log-preview">${escHtml(c.title || 'Untitled conversation')}</div>
+        <div style="margin-top:8px;font-size:0.75rem;color:var(--muted);font-family:'Share Tech Mono',monospace;">
+          Last: ${escHtml((c.messages?.slice(-1)[0]?.content || '').substring(0, 100))}${(c.messages?.slice(-1)[0]?.content?.length || 0) > 100 ? '...' : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function filterChats() {
+    const q = document.getElementById('chatSearch').value.toLowerCase();
+    const mode = document.getElementById('chatModeFilter').value;
+    const filtered = allChats.filter(c => {
+      const matchUser = !q || c.user?.username?.toLowerCase().includes(q) || c.user?.email?.toLowerCase().includes(q);
+      const matchMode = !mode || c.mode === mode;
+      return matchUser && matchMode;
+    });
+    renderChats(filtered);
+  }
+
+  async function loadAnnouncements() {
+    const list = document.getElementById('announcementsList');
+    try {
+      const data = await apiFetch('/admin/announcements');
+      if (!data.length) { list.innerHTML = '<div class="loading-row">No announcements yet.</div>'; return; }
+      list.innerHTML = data.map(a => `
+        <div class="announcement-card">
+          <div class="ann-header">
+            <div class="ann-title">${escHtml(a.title)}</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="ann-date">${fmtDate(a.createdAt)}</div>
+              <button class="action-btn danger" onclick="deleteAnnouncement('${a._id}')">Delete</button>
+            </div>
+          </div>
+          <div class="ann-body">${escHtml(a.body)}</div>
+        </div>
+      `).join('');
+    } catch(e) {
+      list.innerHTML = `<div class="loading-row" style="color:var(--red);">Error: ${e.message}</div>`;
+    }
+  }
+
+  async function sendAnnouncement() {
+    const title = document.getElementById('annTitle').value.trim();
+    const body = document.getElementById('annBody').value.trim();
+    if (!title || !body) return showToast('Fill in both title and body.', 'error');
+    try {
+      await apiFetch('/admin/announcements', { method:'POST', body: JSON.stringify({ title, body }) });
+      document.getElementById('annTitle').value = '';
+      document.getElementById('annBody').value = '';
+      showToast('✓ Announcement broadcast!');
+      loadAnnouncements();
+    } catch(e) {
+      showToast('Error: ' + e.message, 'error');
+    }
+  }
+
+  async function deleteAnnouncement(id) {
+    if (!confirm('Delete this announcement?')) return;
+    try {
+      await apiFetch('/admin/announcements/' + id, { method:'DELETE' });
+      showToast('✓ Deleted.');
+      loadAnnouncements();
+    } catch(e) {
+      showToast('Error: ' + e.message, 'error');
+    }
+  }
+
+  async function loadLoginActivity() {
+    const wrap = document.getElementById('loginLogsWrap');
+    try {
+      const data = await apiFetch('/admin/login-logs');
+      if (!data.length) { wrap.innerHTML = '<div class="loading-row">No login activity yet.</div>'; return; }
+      wrap.innerHTML = `
+        <table class="data-table">
+          <thead><tr><th>User</th><th>Email</th><th>Time</th><th>IP</th><th>Status</th></tr></thead>
+          <tbody>${data.map(log => `
+            <tr>
+              <td>${escHtml(log.username || '—')}</td>
+              <td style="color:var(--muted)">${escHtml(log.email)}</td>
+              <td style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--muted);">${fmtDateTime(log.createdAt)}</td>
+              <td style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--muted);">${log.ip || '—'}</td>
+              <td><span class="badge ${log.success ? 'badge-green' : 'badge-red'}">${log.success ? 'SUCCESS' : 'FAILED'}</span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      `;
+    } catch(e) {
+      wrap.innerHTML = `<div class="loading-row" style="color:var(--red);">Error: ${e.message}</div>`;
+    }
+  }
+
+  function openPlanModal(userId, username, currentPlan) {
+    document.getElementById('modalUserId').value = userId;
+    document.getElementById('modalUsername').textContent = username;
+    document.getElementById('newPlanSelect').value = currentPlan;
+    document.getElementById('planModal').style.display = 'flex';
+  }
+
+  async function updateUserPlan() {
+    const userId = document.getElementById('modalUserId').value;
+    const plan = document.getElementById('newPlanSelect').value;
+    try {
+      await apiFetch('/admin/users/' + userId + '/plan', { method:'PATCH', body: JSON.stringify({ plan }) });
+      document.getElementById('planModal').style.display = 'none';
+      showToast('✓ Plan updated!');
+      loadUsers();
+    } catch(e) {
+      showToast('Error: ' + e.message, 'error');
+    }
+  }
+
+  async function resetMsgs(userId) {
+    if (!confirm('Reset message count for this user?')) return;
+    try {
+      await apiFetch('/admin/users/' + userId + '/reset-messages', { method:'PATCH' });
+      showToast('✓ Messages reset!');
+      loadUsers();
+    } catch(e) {
+      showToast('Error: ' + e.message, 'error');
+    }
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type + ' show';
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function fmtDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString([], { month:'short', day:'numeric', year:'numeric' });
+  }
+
+  function fmtDateTime(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = 'index.html';
+  }
+</script>
+</body>
+</html>
